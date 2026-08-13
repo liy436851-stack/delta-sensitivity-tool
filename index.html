@@ -165,6 +165,19 @@
 
   footer.foot{margin-top:22px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.8;}
   footer.foot b{color:var(--amber-dim);}
+
+  /* ===== Gridshot / hit-fx / pointer-lock additions ===== */
+  @keyframes hitFlash{0%{transform:scale(.4);opacity:1;}100%{transform:scale(2.2);opacity:0;}}
+  @keyframes killPulse{0%{box-shadow:0 0 0 0 rgba(217,163,57,.55);}100%{box-shadow:0 0 0 18px rgba(217,163,57,0);}}
+  .hud .chip.score b{color:#f5d089;}
+  .hud .chip.warn b{color:var(--red);}
+  .pl-badge{position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    background:rgba(217,163,57,.14);border:1px solid var(--amber);color:var(--amber);
+    font-family:"Rajdhani",sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;
+    padding:4px 10px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity .15s;}
+  .pl-badge.show{opacity:1;}
+  .switch-row + .switch-row{margin-top:10px;}
+  .field-group{display:flex;flex-direction:column;gap:10px;grid-column:1/-1;}
 </style>
 </head>
 <body>
@@ -183,6 +196,7 @@
   <nav class="tabs" id="tabs">
     <button data-tab="track" class="active">追蹤測試<span class="sub">TRACKING</span></button>
     <button data-tab="aim">拉槍測試<span class="sub">AIM / FLICK</span></button>
+    <button data-tab="gridshot">拉槍定位模式<span class="sub">AIM POSITIONING</span></button>
     <button data-tab="report">校準回報<span class="sub">REPORT</span></button>
     <button data-tab="settings">參數設定<span class="sub">SETTINGS</span></button>
   </nav>
@@ -239,6 +253,7 @@
 
       <div class="canvas-wrap bracket" id="aimWrap">
         <canvas id="aimCanvas"></canvas>
+        <div class="pl-badge" id="plBadgeAim">🖱 滑鼠指標已鎖定 · 按 ESC 可解除</div>
         <div class="hud">
           <div class="chip">回合 <b id="aimTrialNum">--</b></div>
           <div class="chip">上次反應 <b id="aimLastReact">--</b> ms</div>
@@ -269,6 +284,50 @@
           <tbody id="aimTableBody"></tbody>
         </table>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ 拉槍定位模式 ============ -->
+  <section class="panel" id="panel-gridshot">
+    <div class="card bracket">
+      <h2>拉槍定位模式 <span class="en">AIM POSITIONING</span></h2>
+      <div class="hud-rule"></div>
+      <p class="hint">經典 Aim Labs 固定靶模式：測試區內隨時保持 1–4 顆「靜止不動」的白色目標球。只要把準心移動覆蓋到球心（進入球半徑 60% 的淡色核心範圍）即自動判定擊中、完全不需點擊或放開手指，命中後該顆目標會立即在測試區內隨機重生到新位置，實現不間斷連續拉槍練習。手機：手指直接拖曳畫布移動準心；電腦：可於下方設定開啟「PC 滑鼠模式」，點擊畫布鎖定滑鼠指標後以真實滑鼠移動量拉槍。</p>
+
+      <div class="canvas-wrap bracket" id="gridshotWrap">
+        <canvas id="gridshotCanvas"></canvas>
+        <div class="pl-badge" id="plBadge">🖱 滑鼠指標已鎖定 · 按 ESC 可解除</div>
+        <div class="hud">
+          <div class="chip">剩餘時間 <b id="gsTimeLeft">--</b></div>
+          <div class="chip">擊殺 <b id="gsKills">0</b></div>
+          <div class="chip">命中率 <b id="gsHitRate">--</b></div>
+          <div class="chip">KPS <b id="gsKpsLive">--</b></div>
+          <div class="chip score">得分 <b id="gsScoreLive">0</b></div>
+        </div>
+        <div class="canvas-center-msg" id="gridshotMsg">
+          <div class="big">按下方「開始測試」進入拉槍定位模式</div>
+          <div class="small">目標為靜止固定靶，準心覆蓋球心 60% 核心範圍即自動擊中，無需點擊。手機：直接拖曳畫布移動準心；電腦：可於下方設定開啟「PC 滑鼠模式」後點擊畫布鎖定滑鼠指標。</div>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <button class="btn primary" id="btnGridStart">開始測試</button>
+        <button class="btn ghost" id="btnGridStop" disabled>停止測試</button>
+        <button class="btn ghost" id="btnGridReset">重設結果</button>
+      </div>
+
+      <div class="stat-grid" id="gridStats" style="display:none;">
+        <div class="stat"><div class="k">總得分 SCORE</div><div class="v amber" id="gsScore">--</div></div>
+        <div class="stat"><div class="k">擊殺數 KILLS</div><div class="v green" id="gsKillsFinal">--</div></div>
+        <div class="stat"><div class="k">命中率 HIT RATE</div><div class="v blue" id="gsHitRateFinal">--</div></div>
+        <div class="stat"><div class="k">平均反應 REACTION</div><div class="v" id="gsReaction">--</div></div>
+        <div class="stat"><div class="k">每秒擊殺 KPS</div><div class="v amber" id="gsKpsFinal">--</div></div>
+      </div>
+      <div class="suggestion-box" id="gsRatingBox" style="display:none;">
+        <div class="head"><span class="cat">反應力評價與水準等級</span></div>
+        <p id="gsRatingText" style="font-size:16px;font-weight:700;color:var(--amber);">--</p>
+      </div>
+
     </div>
   </section>
 
@@ -379,6 +438,60 @@
             <option value="55">大 55</option>
           </select>
         </div>
+        <div class="field">
+          <label>拉槍定位 測驗時長</label>
+          <select id="inGridDuration">
+            <option value="30">30 秒</option>
+            <option value="60" selected>60 秒</option>
+            <option value="90">90 秒</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>拉槍定位 同時目標數</label>
+          <select id="inGridCount">
+            <option value="1">1 個</option>
+            <option value="2">2 個</option>
+            <option value="3" selected>3 個</option>
+            <option value="4">4 個</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>拉槍定位 目標重生節奏</label>
+          <select id="inGridSpeed">
+            <option value="0.5">慢（重生間隔較長）</option>
+            <option value="1" selected>中</option>
+            <option value="1.8">快（幾乎瞬間重生）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bracket">
+      <h2>控制與音效 <span class="en">CONTROL &amp; AUDIO</span></h2>
+      <div class="hud-rule"></div>
+      <div class="form-grid">
+        <div class="field-group">
+          <div class="switch-row">
+            <div class="lbl">
+              <span class="t">PC 滑鼠模式 Pointer Lock</span>
+              <span class="d">在電腦瀏覽器開啟後，點擊「拉槍測試」或「拉槍定位模式」畫布會鎖定滑鼠指標，改用滑鼠 movementX/Y 進行真實拉槍；按 ESC 或切換分頁會自動解除鎖定。手機觸控不受影響。</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="inPointerLock">
+              <span class="track"></span>
+            </label>
+          </div>
+          <div class="switch-row">
+            <div class="lbl">
+              <span class="t">音效 Sound Effects</span>
+              <span class="d">使用瀏覽器原生 Web Audio API 合成開火聲與擊中提示音（Hitmarker），無需載入任何音訊檔案。</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="inSound" checked>
+              <span class="track"></span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -424,6 +537,27 @@
     return min < max ? {min,max} : {min:max, max:min+1};
   }
 
+  /* ---------------- shared hit-flash fx ----------------
+     A tiny particle-free "flash ring" used on both the Aim test and
+     Gridshot canvases: an expanding, fading ring drawn for ~260ms
+     wherever a hit landed, giving instant visual feedback on impact. */
+  const aimHitFx = [];
+  function spawnHitFx(x,y,list){ list.push({x,y,start:performance.now()}); }
+  function drawHitFx(ctx, list, now){
+    for(let i=list.length-1;i>=0;i--){
+      const fx = list[i];
+      const t = (now-fx.start)/260;
+      if(t>=1){ list.splice(i,1); continue; }
+      ctx.save();
+      ctx.globalAlpha = 1-t;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, 6+t*30, 0, Math.PI*2);
+      ctx.strokeStyle = '#f5d089'; ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   /* ---------------- dynamic screen lock ----------------
      Engaged the instant a test starts (button click), released the
      instant it stops/finishes or the person switches tabs — so a finger
@@ -452,13 +586,101 @@
   // ever fires while locked, so it never affects normal page scrolling.
   document.addEventListener('touchmove', (e)=>{ if(scrollLocked) e.preventDefault(); }, {passive:false});
 
+  // Switching browser tabs (or minimizing / alt-tabbing away) must release
+  // the lock immediately, per spec — visibilitychange covers tab switches,
+  // blur covers switching to another window/app. Whichever test is
+  // currently running is also stopped, since it can no longer track input.
+  function stopWhateverIsRunning(){
+    if(trackRunning || trackCountdownIv) stopTrackingTest();
+    if(aimState==='dragging' || aimState==='active' || aimState==='waiting') resetAimTest();
+    if(gridRunning || gridCountdownIv) stopGridshotTest();
+    unlockScroll();
+  }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopWhateverIsRunning(); });
+  window.addEventListener('blur', stopWhateverIsRunning);
+
+  /* ---------------- Web Audio API: synthesized SFX, no external files ----------------
+     One shared AudioContext, created lazily on first user gesture (autoplay
+     policies require this). Both sounds are short synthesized envelopes —
+     no samples are loaded. */
+  let actx = null;
+  function getAudioCtx(){
+    if(!settings.soundEnabled) return null;
+    if(!actx){
+      try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(err){ return null; }
+    }
+    if(actx.state === 'suspended'){ actx.resume().catch(()=>{}); }
+    return actx;
+  }
+  // Crisp "pew" — a quick descending square/triangle blip with a fast decay.
+  function playFireSound(){
+    const ctx = getAudioCtx(); if(!ctx) return;
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(620, t0);
+    osc.frequency.exponentialRampToValueAtTime(180, t0+0.06);
+    gain.gain.setValueAtTime(0.16, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+0.07);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+0.08);
+  }
+  // Bright two-tone "ding" hitmarker — short sine blips stacked a fifth apart.
+  function playHitSound(){
+    const ctx = getAudioCtx(); if(!ctx) return;
+    const t0 = ctx.currentTime;
+    [1300, 1950].forEach((freq,i)=>{
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t0+i*0.02);
+      gain.gain.setValueAtTime(0.001, t0+i*0.02);
+      gain.gain.linearRampToValueAtTime(0.22, t0+i*0.02+0.008);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+i*0.02+0.11);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t0+i*0.02); osc.stop(t0+i*0.02+0.12);
+    });
+  }
+  // Low dull thud for a miss/whiff — brief feedback without being annoying.
+  function playMissSound(){
+    const ctx = getAudioCtx(); if(!ctx) return;
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(160, t0);
+    osc.frequency.exponentialRampToValueAtTime(80, t0+0.09);
+    gain.gain.setValueAtTime(0.09, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+0.1);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+0.1);
+  }
+
+  /* ---------------- pointer lock (PC mouse mode) ----------------
+     Shared helper used by both the Aim test and Gridshot canvases. Only
+     engages when the person has switched on "PC 滑鼠模式" in Settings —
+     touch input on mobile is completely unaffected. */
+  function requestPointerLockOn(canvas){
+    if(!settings.pointerLockEnabled) return;
+    if(document.pointerLockElement === canvas) return;
+    try{ canvas.requestPointerLock(); }catch(err){ /* unsupported / denied — silently ignore, touch/mouse still works */ }
+  }
+  function isPointerLocked(canvas){ return document.pointerLockElement === canvas; }
+  document.addEventListener('pointerlockchange', ()=>{
+    const el = document.pointerLockElement;
+    const badgeAim = document.getElementById('plBadgeAim');
+    const badgeGrid = document.getElementById('plBadge');
+    if(badgeAim) badgeAim.classList.toggle('show', el===aimCanvas);
+    if(badgeGrid) badgeGrid.classList.toggle('show', el===gridshotCanvas);
+  });
+
   /* ---------------- state ---------------- */
   const settings = {
     hipfire:50, ads:45, fov:100,
     ballSpeedMult:0.6, trackDuration:20,
     aimTrials:10, targetRadius:40,
     touchScale:0.45, accelEnabled:true,
-    scopeMode:'hipfire'
+    scopeMode:'hipfire',
+    gridDuration:60, gridTargetCount:3, gridSpeedMult:1,
+    pointerLockEnabled:false, soundEnabled:true
   };
 
   const SCOPE_MODES = [
@@ -470,7 +692,7 @@
   ];
   function getScopeMode(){ return SCOPE_MODES.find(m=>m.id===settings.scopeMode) || SCOPE_MODES[0]; }
 
-  const results = { tracking:null, aimByMode:{} };
+  const results = { tracking:null, aimByMode:{}, gridshot:null };
 
   /* ---------------- FOV / projection model ----------------
      focalPx models a simple rectilinear camera projection for the
@@ -508,8 +730,10 @@
     document.querySelectorAll('section.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+name));
     if(name!=='track' && (trackRunning || trackCountdownIv)){ stopTrackingTest(); }
     if(name!=='aim' && aimState!=='idle' && aimState!=='finished'){ resetAimTest(); }
+    if(name!=='gridshot' && (gridRunning || gridCountdownIv)){ stopGridshotTest(); }
     if(name==='track'){ requestAnimationFrame(()=>{ fitCanvas(trackCanvas); drawTrackIdle(); }); }
     if(name==='aim'){ requestAnimationFrame(()=>{ fitCanvas(aimCanvas); drawAimIdle(); }); }
+    if(name==='gridshot'){ requestAnimationFrame(()=>{ fitCanvas(gridshotCanvas); drawGridshotIdle(); }); }
     if(name==='report'){ renderReport(); }
   }
 
@@ -529,6 +753,7 @@
   window.addEventListener('resize', debounce(()=>{
     if(document.getElementById('panel-track').classList.contains('active')){ fitCanvas(trackCanvas); }
     if(document.getElementById('panel-aim').classList.contains('active')){ fitCanvas(aimCanvas); }
+    if(document.getElementById('panel-gridshot').classList.contains('active')){ fitCanvas(gridshotCanvas); }
   }, 200));
   function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
 
@@ -664,6 +889,21 @@
     const speed = Math.max(1, getBallSpeed()); // guard against a 0/negative speed producing Infinity
     ball.segDuration = Math.max(500, (len/speed)*1000);
     ball.segStart = now;
+    // fresh jitter signature per segment so the wobble never repeats identically
+    ball.jitterSeed = {fx:rand(1.6,3.2), fy:rand(1.6,3.2), px:rand(0,Math.PI*2), py:rand(0,Math.PI*2)};
+  }
+  // Small sinusoidal wobble layered on top of the smooth bezier path — adds
+  // a bit of unpredictable "trajectory jitter" without breaking trackability.
+  // Amplitude scales gently with speed so faster difficulty feels a little
+  // more erratic.
+  function ballJitterOffset(now){
+    const seed = ball.jitterSeed; if(!seed) return {x:0,y:0};
+    const amp = 3 + settings.ballSpeedMult*3;
+    const tSec = now/1000;
+    return {
+      x: Math.sin(tSec*seed.fx + seed.px) * amp,
+      y: Math.cos(tSec*seed.fy + seed.py) * amp
+    };
   }
 
   function beginTracking(){
@@ -689,10 +929,17 @@
 
     const safe = ballSafeRect();
     let t = ball.segStart ? (now-ball.segStart)/ball.segDuration : 1;
+    // dynamic direction change: small per-frame chance of aborting the
+    // current segment early once it's well underway, so the ball
+    // occasionally "feints" instead of always following a fully
+    // predictable path to its planned endpoint
+    if(t > 0.35 && t < 0.95 && Math.random() < 0.006*settings.ballSpeedMult){ t = 1; }
     if(t >= 1){ newBallSegment(safe, now); t = 0; }
     const et = easeInOut(clamp(t,0,1));
     const pos = bezierPoint(ball.p0, ball.p1, ball.p2, et);
-    ball.curX = pos.x; ball.curY = pos.y;
+    const jitter = ballJitterOffset(now);
+    ball.curX = clamp(pos.x + jitter.x, safe.left, safe.right);
+    ball.curY = clamp(pos.y + jitter.y, safe.top, safe.bottom);
 
     trackLastFrameTs = now;
 
@@ -973,6 +1220,21 @@
       aim.reticle.pitch = clamp(aim.reticle.pitch + dy*radPerPx, b.pitchMin, b.pitchMax);
       aim.pendingDx = 0; aim.pendingDy = 0;
       if(now - aimLastUiTs > 100){ aimLastUiTs = now; $('aimMultChip').textContent = (radPerPx*proj.focalPx).toFixed(2)+'x'; }
+
+      // Auto-hit: as soon as the reticle enters 60% of the target's
+      // radius, the trial finishes immediately — the player no longer
+      // needs to lift their finger to register a hit. Releasing outside
+      // this zone still ends the trial normally (miss/overshoot/undershoot),
+      // so lifting the finger remains the only way to end a *missed* trial.
+      if(aim.target){
+        const curScreen = {x:angleToX(proj,aim.reticle.yaw), y:angleToY(proj,aim.reticle.pitch)};
+        const effectiveRadius = aim.target.r * 0.6;
+        const dAuto = dist(curScreen, aim.target);
+        if(dAuto <= effectiveRadius){
+          triggerAimAutoHit();
+          return; // aimState just changed away from 'dragging' — skip the rest of this frame
+        }
+      }
     } else if(now - aimLastUiTs > 300){
       aimLastUiTs = now; $('aimMultChip').textContent = '--';
     }
@@ -1015,17 +1277,26 @@
       ctx.fillText('準備...', w/2, h/2+40);
       ctx.restore();
     }
+
+    drawHitFx(ctx, aimHitFx, now);
   }
 
   // Only the finger that starts the drag can drive it — any extra touch
   // (multi-touch) is ignored rather than being blended into the delta,
   // which previously could corrupt the aim calculation.
   aimCanvas.addEventListener('pointerdown', (e)=>{
+    // PC mouse mode: first click (any state, even before a target appears)
+    // engages pointer lock instead of firing a drag — the *next* click
+    // (now locked) drives aiming. Works regardless of aimState.
+    if(settings.pointerLockEnabled && e.pointerType==='mouse' && !isPointerLocked(aimCanvas)){
+      requestPointerLockOn(aimCanvas);
+      return;
+    }
     if(aimState !== 'active') return;
-    if(aimPointerId !== null) return; // already tracking a finger
+    if(aimPointerId !== null) return; // already tracking a finger/mouse
     const rect = aimCanvas.getBoundingClientRect();
     const p = {x:e.clientX-rect.left, y:e.clientY-rect.top};
-    if(p.x < aimCanvas._w*0.5) return; // left half is the dead / move-stick zone — ignored
+    if(!isPointerLocked(aimCanvas) && p.x < aimCanvas._w*0.5) return; // left half is the dead / move-stick zone — ignored (not applicable while pointer-locked)
     aimPointerId = e.pointerId;
     try{ aimCanvas.setPointerCapture(e.pointerId); }catch(err){ /* pointer may already be gone */ }
     const proj = computeProjection(aimCanvas, settings.fov);
@@ -1037,11 +1308,18 @@
     aim.dragStartTime = performance.now();
     aimState = 'dragging';
   }, {passive:true});
-  // pointermove only buffers the raw finger delta — the RAF loop (aimLoop)
-  // applies it once per rendered frame so motion tracks the display's real
-  // refresh rate (60/90/120Hz) instead of jumping per touch event.
+  // pointermove only buffers the raw finger/mouse delta — the RAF loop
+  // (aimLoop) applies it once per rendered frame so motion tracks the
+  // display's real refresh rate (60/90/120Hz) instead of jumping per event.
+  // While pointer-locked, movementX/Y (relative motion) is used instead of
+  // absolute clientX/Y, since the OS cursor no longer moves on screen.
   aimCanvas.addEventListener('pointermove', (e)=>{
     if(aimState !== 'dragging' || e.pointerId !== aimPointerId) return;
+    if(isPointerLocked(aimCanvas)){
+      aim.pendingDx += e.movementX||0;
+      aim.pendingDy += e.movementY||0;
+      return;
+    }
     const rect = aimCanvas.getBoundingClientRect();
     const p = {x:e.clientX-rect.left, y:e.clientY-rect.top};
     aim.pendingDx += (p.x - aim.lastPointer.x);
@@ -1060,6 +1338,20 @@
   // without this the test could get stuck permanently in 'dragging'.
   aimCanvas.addEventListener('lostpointercapture', endAimDrag, {passive:true});
 
+  // Called from aimLoop the instant the reticle enters the 60% auto-hit
+  // zone. Detaches the in-progress finger/mouse drag first (so a pointerup
+  // that arrives later — the finger is very likely still down — can't
+  // double-fire), then finishes the trial exactly like a normal release.
+  function triggerAimAutoHit(){
+    if(aimState !== 'dragging') return;
+    const pid = aimPointerId;
+    aimPointerId = null; // blocks any further pointermove/pointerup for this finger
+    if(pid !== null){
+      try{ aimCanvas.releasePointerCapture(pid); }catch(err){ /* already released or gone */ }
+    }
+    finishAimTrial();
+  }
+
   function finishAimTrial(){
     const proj = computeProjection(aimCanvas, settings.fov);
     const t = aim.target;
@@ -1077,6 +1369,10 @@
     aim.trials.push({ reaction:aim.reactionTime, overshoot, hit, finalDist,
       movementTime: performance.now()-aim.dragStartTime });
     aim.trialIndex++;
+
+    playFireSound();
+    if(hit){ playHitSound(); spawnHitFx(curScreen.x, curScreen.y, aimHitFx); }
+    else { playMissSound(); }
 
     const resultLabel = hit ? 'HIT' : (overshoot>0 ? 'OVERSHOOT' : 'UNDERSHOOT');
     $('aimLastReact').textContent = fmt0(aim.reactionTime);
@@ -1130,6 +1426,447 @@
   }
 
   /* ===================================================================
+     拉槍定位模式 AIM POSITIONING MODE (formerly Gridshot)
+     1–4 small white targets stay alive on screen at all times. Aiming is
+     now done with a persistent "virtual reticle" instead of tapping the
+     target directly — touch drags the reticle (release fires), a locked
+     PC mouse moves it via movementX/Y (click fires), and an unlocked
+     mouse simply follows the cursor (click fires). Hitting a target
+     destroys it and immediately spawns a replacement elsewhere. Ends
+     with kill count, hit-rate, reaction time, and a reaction/skill rating.
+  =================================================================== */
+  const gridshotCanvas = $('gridshotCanvas');
+  let gridCtx = null;
+  let gridRunning = false;
+  let gridRAF = null;
+  let gridStartTs = 0, gridEndTs = 0;
+  let gridCountdownIv = null;
+  let gridPointerId = null; // the single touch pointer currently dragging the reticle (mouse never sets this)
+  let gridLastUiTs = 0;
+  const gridHitFx = [];
+  const gridMissFx = []; // small red X marks for whiffed shots
+  const gridState = {
+    targets:[], kills:0, shots:0, hits:0, reactions:[],
+    reticle:{yaw:0,pitch:0}, // FOV-aware angle, same representation as the Aim test
+    dragLastPointer:null, pendingDx:0, pendingDy:0,
+    mouseAbsInit:false, _lastTs:0
+  };
+  let gridIdSeq = 1;
+
+  function drawGridshotIdle(){
+    gridCtx = gridCtx || gridshotCanvas.getContext('2d');
+    const ctx = fitCanvas(gridshotCanvas);
+    ctx.clearRect(0,0,gridshotCanvas._w,gridshotCanvas._h);
+    drawGrid(ctx, gridshotCanvas._w, gridshotCanvas._h);
+  }
+
+  $('btnGridStart').addEventListener('click', startGridshotCountdown);
+  $('btnGridStop').addEventListener('click', ()=>stopGridshotTest());
+  $('btnGridReset').addEventListener('click', ()=>{
+    if(gridRunning || gridCountdownIv){ stopGridshotTest(); }
+    results.gridshot = null;
+    $('gridStats').style.display = 'none';
+    $('gsRatingBox').style.display = 'none';
+    $('gridshotMsg').style.display = 'flex';
+    $('gridshotMsg').querySelector('.big').textContent = '按下方「開始測試」進入拉槍定位模式';
+    drawGridshotIdle();
+  });
+
+  function startGridshotCountdown(){
+    if(gridRunning || gridCountdownIv) return;
+    lockScroll(); // engaged immediately on click, per spec
+    fitCanvas(gridshotCanvas);
+    $('btnGridStart').disabled = true;
+    $('btnGridStop').disabled = false;
+    const msg = $('gridshotMsg');
+    msg.style.display = 'flex';
+    let n = 3;
+    msg.querySelector('.big').textContent = '倒數 ' + n;
+    msg.querySelector('.small').textContent = '準備好後，移動虛擬準心到目標上開火！';
+    gridCountdownIv = setInterval(()=>{
+      n--;
+      if(n<=0){
+        clearInterval(gridCountdownIv);
+        gridCountdownIv = null;
+        msg.style.display = 'none';
+        beginGridshot();
+      } else {
+        msg.querySelector('.big').textContent = '倒數 ' + n;
+      }
+    },700);
+  }
+
+  function randomTargetPos(w,h,r,m,avoid){
+    let tx, ty, tries = 0;
+    const xr = safeRange(r+m, w-r-m), yr = safeRange(r+m, h-r-m);
+    do{
+      tx = rand(xr.min,xr.max); ty = rand(yr.min,yr.max); tries++;
+    }while(avoid && dist({x:tx,y:ty},avoid) < r*3 && tries<20);
+    return {x:tx,y:ty};
+  }
+
+  // Targets are smaller (~55% of the shared "目標半徑" setting) and drawn
+  // as solid white dots — precision aiming with the virtual reticle is
+  // the point, so they're deliberately less forgiving than the old
+  // tap-anywhere-on-a-big-red-ball mechanic.
+  function gridTargetRadius(){ return Math.max(12, Math.round(settings.targetRadius*0.55)); }
+
+  // Classic Aim Labs "Gridshot" style: targets are completely STATIONARY —
+  // they never move or bounce around. A target only ever changes position
+  // the instant it's destroyed, at which point it immediately reappears at
+  // a fresh random spot elsewhere in the play area (avoiding the point it
+  // just died at, so it doesn't feel like it respawned "in place").
+  // settings.gridSpeedMult now controls how quickly a killed target can
+  // reappear (a tiny stagger) rather than a travel speed.
+  function spawnGridTarget(avoid){
+    const w = gridshotCanvas._w, h = gridshotCanvas._h;
+    const r = gridTargetRadius();
+    const m = edgeMargin();
+    const pos = randomTargetPos(w,h,r,m,avoid||null);
+    gridState.targets.push({
+      id: gridIdSeq++,
+      x:pos.x, y:pos.y, r,
+      spawnTime: performance.now()
+    });
+  }
+
+  function maintainGridTargets(avoid){
+    while(gridState.targets.length < settings.gridTargetCount){ spawnGridTarget(avoid); avoid = null; }
+  }
+
+  // Respawn pacing: rather than an instantaneous reappear on every kill,
+  // a killed target reappears after a short delay controlled by
+  // settings.gridSpeedMult ("目標重生節奏") — faster = shorter gap. A
+  // generation counter invalidates any pending respawn if the test is
+  // stopped/reset/restarted before the timeout fires, so a stale timer can
+  // never spawn a target into a run it doesn't belong to.
+  let gridRespawnGen = 0;
+  function scheduleGridRespawn(avoid){
+    const gen = gridRespawnGen;
+    const delay = clamp(Math.round(220/Math.max(0.1,settings.gridSpeedMult)), 30, 500);
+    setTimeout(()=>{
+      if(gen !== gridRespawnGen || !gridRunning) return;
+      maintainGridTargets(avoid);
+    }, delay);
+  }
+
+  function beginGridshot(){
+    gridRespawnGen++; // invalidate any respawn timers left over from a previous run
+    gridState.targets = []; gridState.kills = 0; gridState.shots = 0; gridState.hits = 0;
+    gridState.reactions = []; gridState.mouseAbsInit = false;
+    gridState.reticle = {yaw:0, pitch:0}; // virtual reticle starts centered
+    gridState.pendingDx = 0; gridState.pendingDy = 0; gridState.dragLastPointer = null;
+    gridPointerId = null;
+    maintainGridTargets();
+    gridStartTs = performance.now();
+    gridEndTs = gridStartTs + settings.gridDuration*1000;
+    gridState._lastTs = gridStartTs;
+    gridRunning = true;
+    updateGridLiveHud(0);
+    gridLoop();
+  }
+
+  function updateGridLiveHud(now){
+    const remain = Math.max(0, (gridEndTs-now)/1000);
+    $('gsTimeLeft').textContent = remain.toFixed(1)+'s';
+    $('gsKills').textContent = gridState.kills;
+    $('gsHitRate').textContent = gridState.shots>0 ? fmt0(gridState.hits/gridState.shots*100)+'%' : '--';
+    $('gsKpsLive').textContent = computeGridKps(now).toFixed(2);
+    $('gsScoreLive').textContent = fmt0(computeGridScore(now));
+  }
+
+  // Kills-per-second is measured against elapsed time-in-run, not the full
+  // configured duration, so it reads sensibly while the test is still live.
+  function computeGridKps(now){
+    const elapsed = Math.max(0.001, ((now||performance.now())-gridStartTs)/1000);
+    return gridState.kills/elapsed;
+  }
+
+  function computeGridScore(now){
+    const hitRate = gridState.shots>0 ? gridState.hits/gridState.shots : 0;
+    const avgReaction = safeAvg(gridState.reactions);
+    const kps = computeGridKps(now);
+    // kills carry the most weight, hit-rate rewards precision, KPS rewards
+    // sustained pace, and a fast average reaction time adds a bonus
+    // (all bonuses are clamped so they can't go negative).
+    const reactionBonus = avgReaction>0 ? Math.max(0, (650-avgReaction))*0.6 : 0;
+    const kpsBonus = Math.max(0, kps)*40;
+    return gridState.kills*55 + hitRate*260 + reactionBonus + kpsBonus;
+  }
+
+  // 反應力評價：一個獨立於命中率的、純粹依平均反應時間分級的形容詞。
+  function reactionSpeedLabel(avgReaction){
+    if(!Number.isFinite(avgReaction) || avgReaction<=0) return '尚無數據';
+    if(avgReaction < 180) return '極快';
+    if(avgReaction < 220) return '很快';
+    if(avgReaction < 260) return '快';
+    if(avgReaction < 320) return '中等';
+    return '偏慢';
+  }
+  // 水準等級：綜合平均反應時間與命中率的分級（由高至低依序判定）。
+  function computeSkillGrade(avgReaction, hitRate){
+    const rMs = avgReaction, hr = hitRate*100;
+    if(!Number.isFinite(rMs) || rMs<=0) return {grade:'--', label:'尚未測試'};
+    if(rMs < 180 && hr >= 90) return {grade:'S+', label:'怪物級'};
+    if(rMs < 220 && hr >= 85) return {grade:'S',  label:'職業級'};
+    if(rMs < 260 && hr >= 80) return {grade:'A',  label:'悍將級'};
+    if(rMs < 320 && hr >= 70) return {grade:'B',  label:'熟練級'};
+    return {grade:'C', label:'新手級'};
+  }
+
+  function gridReticleScreenPos(proj){
+    return { x: angleToX(proj, gridState.reticle.yaw), y: angleToY(proj, gridState.reticle.pitch) };
+  }
+
+  function gridLoop(){
+    if(!gridRunning) return;
+    gridRAF = requestAnimationFrame(gridLoop);
+    const now = performance.now();
+    const ctx = gridCtx || (gridCtx = gridshotCanvas.getContext('2d'));
+    const w = gridshotCanvas._w, h = gridshotCanvas._h;
+    if(now >= gridEndTs){ stopGridshotTest(); return; }
+
+    const dt = Math.min(0.05, Math.max(0.001,(now - (gridState._lastTs||now))/1000));
+    gridState._lastTs = now;
+    const proj = computeProjection(gridshotCanvas, settings.fov);
+
+    // Targets are stationary (classic fixed-target Gridshot) — nothing to
+    // move or bounce here. maintainGridTargets() is still called defensively
+    // every frame as a safety net in case the count ever drops below the
+    // configured amount (it shouldn't, since kills always respawn inline).
+    maintainGridTargets();
+
+    // virtual reticle motion — touch-drag and locked-mouse both feed
+    // pendingDx/pendingDy (raw px), converted through the same FOV-aware
+    // sensitivity mapping used by the Aim test (touch scale × hipfire
+    // sensitivity), applied once per rendered frame.
+    if(gridState.pendingDx || gridState.pendingDy){
+      const speed = Math.hypot(gridState.pendingDx,gridState.pendingDy)/dt;
+      const accelMult = getAccelMultiplier(speed);
+      const radPerPx = (1/proj.focalPx) * settings.touchScale * (settings.hipfire/50) * accelMult;
+      const b = reticleBounds(proj, w, h, 6);
+      gridState.reticle.yaw = clamp(gridState.reticle.yaw + gridState.pendingDx*radPerPx, b.yawMin, b.yawMax);
+      gridState.reticle.pitch = clamp(gridState.reticle.pitch + gridState.pendingDy*radPerPx, b.pitchMin, b.pitchMax);
+      gridState.pendingDx = 0; gridState.pendingDy = 0;
+    }
+
+    // Auto-hit: the reticle no longer needs a click/release to eliminate a
+    // target — the instant it's within 60% of a target's radius (checked
+    // continuously, every frame, regardless of touch/mouse state), that
+    // target is destroyed immediately. Manual click/release fire is still
+    // available as a fallback for targets only within the wider normal
+    // hit tolerance but outside this 60% zone.
+    checkGridAutoHit(proj);
+
+    ctx.clearRect(0,0,w,h);
+    drawGrid(ctx,w,h);
+
+    // white solid targets — smaller and less forgiving than the old
+    // tap-anywhere hitbox, since the reticle now has to be genuinely on top
+    const pulseNow = now;
+    gridState.targets.forEach(t=>{
+      const pulse = 1 + 0.08*Math.sin((pulseNow - t.spawnTime)/180);
+      ctx.save();
+      ctx.beginPath(); ctx.arc(t.x,t.y,t.r*pulse+5,0,Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(t.x,t.y,t.r,0,Math.PI*2);
+      ctx.fillStyle = '#f4f6f2'; ctx.fill();
+      ctx.strokeStyle = 'rgba(11,15,13,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+      // 60% radius inner core — the actual auto-hit zone — drawn as a
+      // faint amber-tinted ring so the player can see exactly how precise
+      // they need to be, rather than just guessing from the outer edge.
+      ctx.beginPath(); ctx.arc(t.x,t.y,t.r*0.6,0,Math.PI*2);
+      ctx.fillStyle = 'rgba(217,163,57,0.16)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(217,163,57,0.55)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.restore();
+    });
+
+    // reticle is drawn continuously (not just while actively dragging) so
+    // the player always knows exactly where the next shot will land
+    const rp = gridReticleScreenPos(proj);
+    ctx.save();
+    ctx.strokeStyle = '#d9a339'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(rp.x-16,rp.y); ctx.lineTo(rp.x-5,rp.y);
+    ctx.moveTo(rp.x+5,rp.y); ctx.lineTo(rp.x+16,rp.y);
+    ctx.moveTo(rp.x,rp.y-16); ctx.lineTo(rp.x,rp.y-5);
+    ctx.moveTo(rp.x,rp.y+5); ctx.lineTo(rp.x,rp.y+16);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(rp.x,rp.y,3,0,Math.PI*2); ctx.fillStyle='#d9a339'; ctx.fill();
+    ctx.restore();
+
+    drawHitFx(ctx, gridHitFx, now);
+    for(let i=gridMissFx.length-1;i>=0;i--){
+      const fx = gridMissFx[i];
+      const t = (now-fx.start)/240;
+      if(t>=1){ gridMissFx.splice(i,1); continue; }
+      ctx.save();
+      ctx.globalAlpha = 1-t;
+      ctx.strokeStyle = '#e0575c'; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(fx.x-9,fx.y-9); ctx.lineTo(fx.x+9,fx.y+9);
+      ctx.moveTo(fx.x+9,fx.y-9); ctx.lineTo(fx.x-9,fx.y+9);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if(now - gridLastUiTs > 100){ gridLastUiTs = now; updateGridLiveHud(now); }
+  }
+
+  // Continuous auto-hit check, run once per rendered frame from gridLoop.
+  // Scans every live target and destroys the first one whose distance from
+  // the reticle falls within 60% of its own radius — no click/release
+  // needed. At most one elimination per frame; any others simply get
+  // caught on the very next frame instead.
+  function checkGridAutoHit(proj){
+    if(!gridRunning || !gridState.targets.length) return;
+    const rp = gridReticleScreenPos(proj);
+    for(let i=0;i<gridState.targets.length;i++){
+      const t = gridState.targets[i];
+      const effectiveRadius = t.r * 0.6;
+      const d = dist(rp, t);
+      if(d <= effectiveRadius){
+        autoEliminateGridTarget(i);
+        break;
+      }
+    }
+  }
+  function autoEliminateGridTarget(idx){
+    const t = gridState.targets[idx];
+    gridState.shots++; gridState.hits++; gridState.kills++;
+    gridState.reactions.push(performance.now() - t.spawnTime);
+    gridState.targets.splice(idx,1);
+    spawnHitFx(t.x, t.y, gridHitFx);
+    playHitSound();
+    scheduleGridRespawn(t); // respawn after the configured pacing delay, away from where it just died
+  }
+
+  // Fires at the reticle's CURRENT screen position (recomputed fresh each
+  // call so it's always accurate even if the canvas was just resized).
+  function fireGridshotAtReticle(){
+    const proj = computeProjection(gridshotCanvas, settings.fov);
+    const p = gridReticleScreenPos(proj);
+    gridState.shots++;
+    let hitIdx = -1, bestD = Infinity;
+    gridState.targets.forEach((t,i)=>{
+      const d = dist(p, t);
+      if(d <= t.r+4 && d < bestD){ bestD = d; hitIdx = i; }
+    });
+    playFireSound();
+    if(hitIdx >= 0){
+      const t = gridState.targets[hitIdx];
+      gridState.hits++; gridState.kills++;
+      gridState.reactions.push(performance.now() - t.spawnTime);
+      gridState.targets.splice(hitIdx,1);
+      spawnHitFx(t.x, t.y, gridHitFx);
+      playHitSound();
+      scheduleGridRespawn(t); // respawn after the configured pacing delay, away from where it just died
+    } else {
+      gridMissFx.push({x:p.x, y:p.y, start:performance.now()});
+      playMissSound();
+    }
+  }
+
+  gridshotCanvas.addEventListener('pointerdown', (e)=>{
+    if(!gridRunning) return;
+    if(e.pointerType === 'mouse'){
+      // PC mouse mode: first click just engages pointer lock — the *next*
+      // click (now locked) actually fires. An unlocked mouse click fires
+      // immediately at wherever the cursor-driven reticle already is.
+      if(settings.pointerLockEnabled && !isPointerLocked(gridshotCanvas)){
+        requestPointerLockOn(gridshotCanvas);
+        return;
+      }
+      fireGridshotAtReticle();
+      return;
+    }
+    // touch / pen: starts a reticle drag — firing happens on release, not
+    // on touchdown, so the player can reposition before committing a shot.
+    // Only the first simultaneous touch is honoured.
+    if(gridPointerId !== null) return;
+    gridPointerId = e.pointerId;
+    try{ gridshotCanvas.setPointerCapture(e.pointerId); }catch(err){ /* pointer may already be gone */ }
+    const rect = gridshotCanvas.getBoundingClientRect();
+    gridState.dragLastPointer = {x:e.clientX-rect.left, y:e.clientY-rect.top};
+  }, {passive:true});
+
+  gridshotCanvas.addEventListener('pointermove', (e)=>{
+    if(!gridRunning) return;
+    if(e.pointerType === 'mouse'){
+      if(isPointerLocked(gridshotCanvas)){
+        gridState.pendingDx += (e.movementX||0);
+        gridState.pendingDy += (e.movementY||0);
+      } else {
+        // unlocked mouse: reticle follows the cursor absolutely
+        const rect = gridshotCanvas.getBoundingClientRect();
+        const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+        const proj = computeProjection(gridshotCanvas, settings.fov);
+        gridState.reticle.yaw = xToAngle(proj, mx);
+        gridState.reticle.pitch = yToAngle(proj, my);
+      }
+      return;
+    }
+    if(e.pointerId !== gridPointerId || !gridState.dragLastPointer) return;
+    const rect = gridshotCanvas.getBoundingClientRect();
+    const p = {x:e.clientX-rect.left, y:e.clientY-rect.top};
+    gridState.pendingDx += (p.x - gridState.dragLastPointer.x);
+    gridState.pendingDy += (p.y - gridState.dragLastPointer.y);
+    gridState.dragLastPointer = p;
+  }, {passive:true});
+
+  function endGridTouchDrag(e){
+    if(e && e.pointerId !== gridPointerId) return;
+    gridPointerId = null;
+    gridState.dragLastPointer = null;
+    if(gridRunning) fireGridshotAtReticle(); // release = fire, mirroring the Aim test's drag-and-release model
+  }
+  gridshotCanvas.addEventListener('pointerup', endGridTouchDrag, {passive:true});
+  gridshotCanvas.addEventListener('pointercancel', endGridTouchDrag, {passive:true});
+  gridshotCanvas.addEventListener('lostpointercapture', endGridTouchDrag, {passive:true});
+
+  function stopGridshotTest(){
+    if(gridCountdownIv){ clearInterval(gridCountdownIv); gridCountdownIv = null; }
+    if(!gridRunning){
+      unlockScroll();
+      $('btnGridStart').disabled = false;
+      $('btnGridStop').disabled = true;
+      $('gridshotMsg').style.display = 'flex';
+      $('gridshotMsg').querySelector('.big').textContent = '按下方「開始測試」進入拉槍定位模式';
+      return;
+    }
+    gridRunning = false;
+    gridRespawnGen++; // invalidate any respawn timers still pending from this run
+    if(gridRAF) cancelAnimationFrame(gridRAF);
+    unlockScroll();
+    if(document.pointerLockElement === gridshotCanvas){ document.exitPointerLock(); }
+    $('btnGridStart').disabled = false;
+    $('btnGridStop').disabled = true;
+
+    const stopNow = performance.now();
+    const hitRate = gridState.shots>0 ? gridState.hits/gridState.shots : 0;
+    const avgReaction = safeAvg(gridState.reactions);
+    const kps = computeGridKps(Math.min(stopNow, gridEndTs));
+    const score = computeGridScore(Math.min(stopNow, gridEndTs));
+    const speedLabel = reactionSpeedLabel(avgReaction);
+    const skill = computeSkillGrade(avgReaction, hitRate);
+    results.gridshot = { kills:gridState.kills, shots:gridState.shots, hitRate, avgReaction, kps, score, duration:settings.gridDuration, speedLabel, skillGrade:skill.grade, skillLabel:skill.label };
+
+    $('gridStats').style.display = 'grid';
+    $('gsScore').textContent = fmt0(score);
+    $('gsKillsFinal').textContent = gridState.kills;
+    $('gsHitRateFinal').textContent = fmt0(hitRate*100)+'%';
+    $('gsReaction').textContent = avgReaction>0 ? fmt0(avgReaction)+' ms' : '--';
+    $('gsKpsFinal').textContent = kps.toFixed(2);
+    $('gsRatingBox').style.display = 'block';
+    $('gsRatingText').textContent = '反應力評價：'+speedLabel+' ｜ 水準等級：'+skill.grade+'（'+skill.label+'）';
+
+    $('gridshotMsg').style.display = 'flex';
+    $('gridshotMsg').querySelector('.big').textContent = '測試完成，可切換到「校準回報」查看總結';
+    $('gridshotMsg').querySelector('.small').textContent = '或按「開始測試」重新挑戰一次。';
+    drawGridshotIdle();
+  }
+
+  /* ===================================================================
      REPORT / PER-MODE SUGGESTION ENGINE
   =================================================================== */
   function computeSuggestionForMode(stats){
@@ -1169,7 +1906,23 @@
     html += statBlock('追蹤平均誤差', t?fmt1(t.avgErr)+' px':'尚未測試', 'amber');
     html += statBlock('已測試模式數', modeIds.length, 'blue');
     html += statBlock('目前 FOV', Math.round(settings.fov)+'°', 'amber');
+    const g = results.gridshot;
+    html += statBlock('拉槍定位得分', g?fmt0(g.score):'尚未測試', 'blue');
     html += '</div>';
+
+    if(g){
+      html += '<div class="suggestion-box"><div class="head"><span class="cat">拉槍定位模式 總結</span><span class="num" style="color:var(--muted);font-size:12px;">'+g.duration+' 秒挑戰</span></div>';
+      html += '<div class="value-compare">';
+      html += '<div class="vc"><div class="lbl">擊殺數</div><div class="to num">'+g.kills+'</div></div>';
+      html += '<div class="vc"><div class="lbl">命中率</div><div class="to num">'+fmt0(g.hitRate*100)+'%</div></div>';
+      html += '<div class="vc"><div class="lbl">平均反應</div><div class="to num">'+(g.avgReaction>0?fmt0(g.avgReaction)+' ms':'--')+'</div></div>';
+      html += '<div class="vc"><div class="lbl">KPS</div><div class="to num">'+(g.kps!=null?g.kps.toFixed(2):'--')+'</div></div>';
+      html += '<div class="vc"><div class="lbl">總得分</div><div class="to num">'+fmt0(g.score)+'</div></div>';
+      html += '</div>';
+      html += '<p style="font-weight:700;color:var(--amber);">反應力評價：'+(g.speedLabel||'--')+' ｜ 水準等級：'+(g.skillGrade||'--')+'（'+(g.skillLabel||'尚未測試')+'）</p>';
+      html += '<p>'+(g.hitRate<0.55 ? '拉槍定位命中率偏低，建議先降低目標移動速度或放大目標半徑，練熟虛擬準心的操控節奏後再挑戰快速目標。' : (g.avgReaction>500 ? '拉槍定位平均反應時間偏慢，建議先以較少的同時目標數量練習，熟悉後再逐步提高到 4 個目標。' : '拉槍定位表現穩定，可嘗試提高目標移動速度或增加同時目標數來挑戰更高分。'))+'</p>';
+      html += '</div>';
+    }
 
     if(!t || modeIds.length===0){
       html += '<div class="empty-note">需完成「追蹤測試」，以及至少一種瞄準模式的「拉槍測試」，才能產生靈敏度微調建議。目前 '+(t?'追蹤測試已完成':'追蹤測試尚未完成')+'、已測試 '+modeIds.length+' 種瞄準模式。</div>';
@@ -1220,10 +1973,12 @@
   }
 
   $('btnClearAll').addEventListener('click', ()=>{
-    results.tracking = null; results.aimByMode = {};
+    results.tracking = null; results.aimByMode = {}; results.gridshot = null;
     $('trackStats').style.display = 'none';
     $('aimStats').style.display = 'none';
     $('aimTableWrap').style.display = 'none';
+    $('gridStats').style.display = 'none';
+    $('gsRatingBox').style.display = 'none';
     renderReport();
   });
 
@@ -1236,6 +1991,14 @@
   $('inBallSpeed').addEventListener('change', (e)=>{ settings.ballSpeedMult = parseFloat(e.target.value); });
   $('inTrials').addEventListener('change', (e)=>{ settings.aimTrials = parseInt(e.target.value); });
   $('inRadius').addEventListener('change', (e)=>{ settings.targetRadius = parseInt(e.target.value); });
+  $('inGridDuration').addEventListener('change', (e)=>{ settings.gridDuration = parseInt(e.target.value); });
+  $('inGridCount').addEventListener('change', (e)=>{ settings.gridTargetCount = parseInt(e.target.value); });
+  $('inGridSpeed').addEventListener('change', (e)=>{ settings.gridSpeedMult = parseFloat(e.target.value); });
+  $('inPointerLock').addEventListener('change', (e)=>{
+    settings.pointerLockEnabled = e.target.checked;
+    if(!settings.pointerLockEnabled && document.pointerLockElement){ document.exitPointerLock(); }
+  });
+  $('inSound').addEventListener('change', (e)=>{ settings.soundEnabled = e.target.checked; });
 
   function updateFovUi(){
     $('fovVal').textContent = Math.round(settings.fov)+'°';
@@ -1292,6 +2055,7 @@
   updateFovUi();
   updateTouchScaleUi();
   requestAnimationFrame(()=>{ fitCanvas(trackCanvas); drawTrackIdle(); });
+  requestAnimationFrame(()=>{ fitCanvas(gridshotCanvas); drawGridshotIdle(); });
 })();
 </script>
 </body>
